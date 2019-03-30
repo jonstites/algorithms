@@ -1,0 +1,32 @@
+language: rust
+rust: stable
+cache: cargo
+
+env:
+  global:
+    - PROJECT_NAME: algorithms
+
+matrix:
+  allow_failures:
+    - rust: nightly
+  fast_finish: true
+  include:
+    - os: linux
+      rust: stable
+    - os: linux
+      rust: beta
+    - os: linux
+      rust: nightly
+
+script:
+  - cargo build
+  - cargo test
+
+branches:
+  only:
+    # Pushes and PR to the master branch
+    - master
+    
+notifications:
+  email:
+    on_success: never
