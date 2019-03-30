@@ -3,5 +3,14 @@ name = "algorithms"
 version = "0.1.0"
 authors = ["Jonathan Stites <mail@jonstites.com>"]
 edition = "2018"
+description = "Using algorithms practice to learn Rust."
+documentation = "https://github.com/jonstites/algorithms"
+homepage = "https://github.com/jonstites/algorithms"
+repository = "https://github.com/jonstites/algorithms"
+license = "MIT OR Apache-2.0"
+
+[badges]
+travis-ci = { repository = "jonstites/algorithms", branch = "master" }
+
 
 [dependencies]
