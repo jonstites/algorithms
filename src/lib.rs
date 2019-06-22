@@ -1,4 +1,4 @@
-mod linked_list {
+pub mod linked_list {
 
     #[derive(Debug, PartialEq)]
     pub struct LinkedList<T> {
@@ -188,7 +188,7 @@ mod linked_list {
     }
 }
 
-mod graph {
+pub mod graph {
     use std::collections::HashSet;
 
     type NodeIndex = usize;
@@ -354,5 +354,110 @@ mod graph {
             assert!(!graph.is_tree());
         }
 
+    }
+}
+
+pub mod primes {
+
+    use std::iter;
+
+    pub fn trial_division(n: usize) -> usize {
+        let mut primes = Vec::new();
+        for i in 2..n {
+            if !primes.iter().any(|&p| i % p == 0) {
+                primes.push(i);
+            }
+        }
+        primes.len()
+    }
+
+    pub fn sieve_of_eratosthenes_odds(n: usize) -> usize {
+        if n <= 2 {
+            return 0;
+        }
+
+        let mut values: Vec<bool> = (3..n).step_by(2).map(|_i| true).collect();
+
+        for index in 0..(values.len()) {
+            let value = values[index];
+            if !value {
+                continue;
+            }
+            let p = 3 + 2 * index;
+            // optimization: all composites c, p < c < p^2 are already marked
+            let mut i = p * p;
+
+            // optimization: therefore, we can break if p^2 > n
+            if i > n {
+                break;
+            }
+            while i < n {
+                values[(i - 3_usize) / 2] = false;
+                i += 2 * p;
+            }
+        }
+        values.into_iter().filter(|&p| p).count() + 1
+    }
+
+    // not implemented yet
+    pub fn sieve_of_eratosthenes_naive(n: usize) -> usize {
+        if n <= 2 {
+            return 0;
+        }
+
+        let mut values = vec![true; n];
+        values[0] = false;
+        values[1] = false;
+
+        for p in 0..n {
+            if !values[p] {
+                continue;
+            }
+
+            // optimization: all composites c, p < c < p^2 are already marked
+            let mut i = p * p;
+
+            // optimization: therefore, we can break if p^2 > n
+            if i > n {
+                break;
+            }
+            while i < n {
+                values[i] = false;
+                i += p;
+            }
+        }
+        values.into_iter().filter(|&p| p).count()
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_trial_division() {
+            let values: Vec<usize> = vec![0, 1, 2, 3, 6, 100000];
+            let num_primes: Vec<usize> = vec![0, 0, 0, 1, 3, 9592];
+            for (value, num_prime) in values.into_iter().zip(num_primes) {
+                assert_eq!(trial_division(value), num_prime);
+            }
+        }
+
+        #[test]
+        fn test_sieve_of_eratosthenes_naive() {
+            let values: Vec<usize> = vec![0, 1, 2, 3, 6, 100000];
+            let num_primes: Vec<usize> = vec![0, 0, 0, 1, 3, 9592];
+            for (value, num_prime) in values.into_iter().zip(num_primes) {
+                assert_eq!(sieve_of_eratosthenes_naive(value), num_prime);
+            }
+        }
+
+        #[test]
+        fn test_sieve_of_eratosthenes_odds() {
+            let values: Vec<usize> = vec![0, 1, 2, 3, 6, 100000];
+            let num_primes: Vec<usize> = vec![0, 0, 0, 1, 3, 9592];
+            for (value, num_prime) in values.into_iter().zip(num_primes) {
+                assert_eq!(sieve_of_eratosthenes_odds(value), num_prime);
+            }
+        }
     }
 }
