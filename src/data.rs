@@ -331,5 +331,164 @@ pub mod data {
                 }
             }
         }
+
+        // Way cleaner than Open Addressing - this is standard array + vector implementation
+        pub mod hash_set2 {
+            use std::collections::hash_map::DefaultHasher;
+            use std::hash::{Hash, Hasher};
+
+            pub struct HashSet<T: Hash + Clone + PartialEq> {
+                data: Box<[Vec<T>]>,
+                size: usize,
+            }
+
+            impl<T: Hash + Clone + PartialEq> HashSet<T> {
+                pub fn new() -> HashSet<T> {
+                    HashSet {
+                        data: Box::new([Vec::new(); 1]),
+                        size: 0,
+                    }
+                }
+
+                pub fn is_empty(&self) -> bool {
+                    self.size == 0
+                }
+
+                pub fn size(&self) -> usize {
+                    self.size
+                }
+
+                pub fn clear(&mut self) {
+                    self.data = Box::new([Vec::new(); 1]);
+                    self.size = 0;
+                }
+
+                pub fn contains(&self, item: &T) -> bool {
+                    let index = self.bucket_of(item);
+
+                    self.data[index].iter().any(|item2| item2 == item)
+                }
+
+                pub fn add(&mut self, item: T) -> bool {
+                    if self.contains(&item) {
+                        return false;
+                    }
+
+                    if self.size + 1 >= self.data.len() {
+                        let new_data_length = self.size * 2 + 1;
+                        let new_data = vec![Vec::new(); new_data_length].into_boxed_slice();
+                        let old_data = std::mem::replace(&mut self.data, new_data);
+
+                        for v in old_data.into_iter() {
+                            for item in v.into_iter() {
+                                self.add(item.clone());
+                            }
+                        }
+                    }
+
+                    let index = self.bucket_of(&item);
+                    self.data[index].push(item);
+                    self.size += 1;
+
+                    true
+                }
+
+                pub fn remove(&mut self, item: &T) -> bool {
+                    let index = self.bucket_of(item);
+
+                    let bucket = &mut self.data[index];
+                    let item_index = bucket.iter().position(|item2| item2 == item);
+
+                    match item_index {
+                        Some(i) => {
+                            bucket.remove(i);
+                            self.size -= 1;
+                            return true;
+                        }
+                        None => false,
+                    }
+                }
+
+                fn bucket_of(&self, item: &T) -> usize {
+                    let mut hasher = DefaultHasher::new();
+                    item.hash(&mut hasher);
+                    let hash = hasher.finish();
+
+                    hash as usize % self.data.len()
+                }
+            }
+
+            #[cfg(test)]
+            mod tests {
+                use super::*;
+
+                #[test]
+                fn test_add_remove() {
+                    let mut hash_set = HashSet::new();
+                    let result = hash_set.add(4);
+                    assert_eq!(result, true);
+
+                    let result = hash_set.add(4);
+                    assert_eq!(result, false);
+
+                    hash_set.remove(&4);
+                    let result = hash_set.add(4);
+                    assert_eq!(result, true);
+                }
+
+                #[test]
+                fn test_is_empty() {
+                    let mut hash_set = HashSet::new();
+                    assert!(hash_set.is_empty());
+
+                    hash_set.add(21);
+                    assert!(!hash_set.is_empty());
+
+                    hash_set.remove(&21);
+                    assert!(hash_set.is_empty());
+                }
+
+                #[test]
+                fn test_contains() {
+                    let mut hash_set = HashSet::new();
+                    assert_eq!(hash_set.contains(&"abc"), false);
+
+                    hash_set.add("abc");
+                    assert!(hash_set.contains(&"abc"));
+
+                    assert!(!hash_set.contains(&"123"));
+
+                    hash_set.remove(&"abc");
+                    assert!(!hash_set.contains(&"abc"));
+                }
+
+                #[test]
+                fn test_clear() {
+                    let mut hash_set = HashSet::new();
+                    hash_set.add(123);
+
+                    hash_set.clear();
+
+                    assert!(hash_set.is_empty());
+                    assert!(!hash_set.contains(&123));
+                    assert_eq!(hash_set.size(), 0);
+                }
+
+                #[test]
+                fn test_benchmarks_tolerable() {
+                    let mut hash_set = HashSet::new();
+
+                    for i in 0..1000000 {
+                        hash_set.add(i);
+                    }
+
+                    for i in 0..1000000 {
+                        if i % 2 == 0 {
+                            hash_set.remove(&i);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
