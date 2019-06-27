@@ -1,5 +1,6 @@
 pub mod data {
 
+    // Regular ole stack, only using Vec a tiny bit
     pub mod stack {
         #[derive(Debug)]
         pub struct Stack<T: Default> {
@@ -485,6 +486,84 @@ pub mod data {
                         hash_set.remove(&i);
                     }
                 }
+            }
+        }
+    }
+
+    // Graph!
+    pub mod graph {
+        use std::collections::HashMap;
+
+        type NodeLabel = usize;
+
+        pub struct Graph<T> {
+            nodes: Vec<T>,
+            edges: Vec<Vec<NodeLabel>>,
+        }
+
+        impl<T> Graph<T> {
+
+            pub fn new(nodes: Vec<T>, edge_list: Vec<(usize, usize)>) -> Graph<T> {                
+                let mut edges = vec![Vec::new(); nodes.len()];
+                for (head_id, tail_id) in edge_list.iter() {                    
+                    edges[*head_id].push(*tail_id);
+                }
+
+                Graph {
+                    nodes, 
+                    edges
+                }
+            }
+
+            pub fn bfs(&self, source_id: usize, destination_id: usize) -> Option<Vec<usize>> {
+                let mut queue = vec!(source_id);
+                let mut parents = HashMap::new();
+
+                while let Some(node) = queue.pop() {                    
+
+                    if node == destination_id {
+                        return Some(self.backtrace(node, &parents));
+                    }
+
+                    for edge in self.edges[node].iter() {
+                        if !parents.contains_key(edge) {
+                            queue.push(*edge);
+                            parents.insert(*edge, node);
+                        }
+                    }
+
+                }
+                None
+            }
+
+            fn backtrace(&self, node: usize, parents: &HashMap<usize, usize>) -> Vec<usize> {
+                let mut trace = vec!(node);
+                let mut current = node;
+                while let Some(parent) = parents.get(&current) {
+                    trace.push(*parent);
+                    current = *parent;
+                }
+                trace.into_iter().rev().collect()
+            }
+        }
+
+
+
+        #[cfg(test)]
+        mod tests {
+            use super::*;
+
+            #[test]
+            fn test_bfs() {
+                let graph = Graph::new(vec![0; 5], vec!((0,1), (1,2), (2,4), (3, 4)));
+
+                assert_eq!(Some(vec!(0, 1, 2, 4)), graph.bfs(0, 4));
+                assert_eq!(None, graph.bfs(4, 0));
+
+                let graph = Graph::new(vec![0; 5], vec!((0,1), (1,2), (2,3), (3, 4), (2, 4)));
+                
+                assert_eq!(Some(vec!(0, 1, 2, 4)), graph.bfs(0, 4));
+
             }
         }
     }

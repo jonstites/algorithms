@@ -7,9 +7,14 @@ This is a collections of practice tools and libraries for learning Rust and algo
 ## Data Structures
 
 Implemented so far are:
+
 [x] singly linked lists
+
 [x] stack (mostly avoiding Vec)
+
 [x] HashSet (both open addressing and separate chaining)
+
+[x] Graph with BFS
 
 ## Algorithms
 
