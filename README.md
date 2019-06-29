@@ -14,7 +14,11 @@ Implemented so far are:
 
 [x] HashSet (both open addressing and separate chaining)
 
-[x] Graph with BFS
+[x] Graph
+
+[x] Breadth First Search
+
+[x] Depth First Search
 
 ## Algorithms
 

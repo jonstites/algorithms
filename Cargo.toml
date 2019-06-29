@@ -14,3 +14,5 @@ travis-ci = { repository = "jonstites/algorithms", branch = "master" }
 
 
 [dependencies]
+clap = "2.33.0"
+itertools = "0.8.0"

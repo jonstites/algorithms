@@ -519,12 +519,13 @@ pub mod data {
                     .collect();
 
                 Graph::new(nodes, edge_list)
-            }
+            }            
 
             pub fn dfs(&self, source_id: NodeLabel, destination_id: NodeLabel) -> Option<Vec<NodeLabel>> {
-                let mut stack = vec!(source_id);
                 let mut parents = HashMap::new();
                 let mut expanded = HashSet::new();
+
+                let mut stack = vec!(source_id);
 
                 while let Some(node) = stack.pop() {
                     expanded.insert(node);
@@ -545,18 +546,22 @@ pub mod data {
             }
 
             pub fn bfs(&self, source_id: NodeLabel, destination_id: NodeLabel) -> Option<Vec<NodeLabel>> {
-                let mut parents = HashMap::new();
                 let mut queue = VecDeque::new();
-                queue.push_back(source_id);
+                let mut parents = HashMap::new();
+                let mut expanded = HashSet::new();
 
+                expanded.insert(source_id);
+                queue.push_back(source_id);
+                
                 while let Some(node) = queue.pop_front() {
                     if node == destination_id {
                         return Some(self.backtrace(node, &parents));
                     }
 
                     for (edge_node, _edge_weight) in self.edges[node].iter() {
-                        if !parents.contains_key(&edge_node) {
+                        if !expanded.contains(&edge_node) {
                             parents.insert(*edge_node, node);
+                            expanded.insert(*edge_node);
                             queue.push_back(*edge_node);
                         }
                     }

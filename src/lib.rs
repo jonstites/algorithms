@@ -1,5 +1,6 @@
 pub mod data;
 
+
 pub mod linked_list {
 
     #[derive(Debug, PartialEq)]
@@ -190,7 +191,7 @@ pub mod linked_list {
     }
 }
 
-pub mod graph {
+pub mod old_graph {
     use std::collections::HashSet;
 
     type NodeIndex = usize;
