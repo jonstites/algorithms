@@ -492,52 +492,80 @@ pub mod data {
 
     // Graph!
     pub mod graph {
-        use std::collections::HashMap;
+        use std::collections::{HashMap, HashSet, VecDeque, BTreeMap};
 
         type NodeLabel = usize;
+        type EdgeWeight = i32;
 
         pub struct Graph<T> {
             nodes: Vec<T>,
-            edges: Vec<Vec<NodeLabel>>,
+            edges: Vec<BTreeMap<NodeLabel, EdgeWeight>>,
         }
 
         impl<T> Graph<T> {
-
-            pub fn new(nodes: Vec<T>, edge_list: Vec<(usize, usize)>) -> Graph<T> {                
-                let mut edges = vec![Vec::new(); nodes.len()];
-                for (head_id, tail_id) in edge_list.iter() {                    
-                    edges[*head_id].push(*tail_id);
+            pub fn new(nodes: Vec<T>, edge_list: Vec<(NodeLabel, NodeLabel, EdgeWeight)>) -> Graph<T> {
+                let mut edges = vec![BTreeMap::new(); nodes.len()];
+                for (head_id, tail_id, edge_weight) in edge_list.iter() {
+                    edges[*head_id].insert(*tail_id, *edge_weight);
                 }
 
-                Graph {
-                    nodes, 
-                    edges
-                }
+                Graph { nodes, edges }
             }
 
-            pub fn bfs(&self, source_id: usize, destination_id: usize) -> Option<Vec<usize>> {
-                let mut queue = vec!(source_id);
+            pub fn new_unweighted(nodes: Vec<T>, edge_list: Vec<(NodeLabel, NodeLabel)>) -> Graph<T> {
+                let edge_list = edge_list
+                    .into_iter()
+                    .map(|(source, destination)| (source, destination, 0))
+                    .collect();
+
+                Graph::new(nodes, edge_list)
+            }
+
+            pub fn dfs(&self, source_id: NodeLabel, destination_id: NodeLabel) -> Option<Vec<NodeLabel>> {
+                let mut stack = vec!(source_id);
                 let mut parents = HashMap::new();
+                let mut expanded = HashSet::new();
 
-                while let Some(node) = queue.pop() {                    
-
+                while let Some(node) = stack.pop() {
+                    expanded.insert(node);
                     if node == destination_id {
                         return Some(self.backtrace(node, &parents));
                     }
 
-                    for edge in self.edges[node].iter() {
-                        if !parents.contains_key(edge) {
-                            queue.push(*edge);
+                    // Reverse edges here because it pleases me to have DFS go down the
+                    // left side of graph rather than right side
+                    for (edge, _edge_weight) in self.edges[node].iter().rev() {
+                        if !expanded.contains(edge) {
+                            stack.push(*edge);
                             parents.insert(*edge, node);
                         }
                     }
+                }
+                None
+            }
 
+            pub fn bfs(&self, source_id: NodeLabel, destination_id: NodeLabel) -> Option<Vec<NodeLabel>> {
+                let mut parents = HashMap::new();
+                let mut queue = VecDeque::new();
+                queue.push_back(source_id);
+
+                while let Some(node) = queue.pop_front() {
+                    if node == destination_id {
+                        return Some(self.backtrace(node, &parents));
+                    }
+
+                    for (edge_node, _edge_weight) in self.edges[node].iter() {
+                        if !parents.contains_key(&edge_node) {
+                            parents.insert(*edge_node, node);
+                            queue.push_back(*edge_node);
+                        }
+                    }
                 }
                 None
             }
 
             fn backtrace(&self, node: usize, parents: &HashMap<usize, usize>) -> Vec<usize> {
-                let mut trace = vec!(node);
+                let mut trace = vec![node];
                 let mut current = node;
                 while let Some(parent) = parents.get(&current) {
                     trace.push(*parent);
@@ -547,23 +575,55 @@ pub mod data {
             }
         }
 
-
-
         #[cfg(test)]
         mod tests {
             use super::*;
 
             #[test]
             fn test_bfs() {
-                let graph = Graph::new(vec![0; 5], vec!((0,1), (1,2), (2,4), (3, 4)));
+                let graph = Graph::new_unweighted(vec![0; 5], vec![(0, 1), (1, 2), (2, 4), (3, 4)]);
 
                 assert_eq!(Some(vec!(0, 1, 2, 4)), graph.bfs(0, 4));
                 assert_eq!(None, graph.bfs(4, 0));
 
-                let graph = Graph::new(vec![0; 5], vec!((0,1), (1,2), (2,3), (3, 4), (2, 4)));
-                
+                let graph = Graph::new_unweighted(vec![0; 5], vec![(0, 1), (1, 2), (2, 3), (3, 4), (2, 4)]);
+
                 assert_eq!(Some(vec!(0, 1, 2, 4)), graph.bfs(0, 4));
 
+                let graph = Graph::new_unweighted(
+                    vec![0; 12],
+                    vec![
+                        (0, 1), (1, 2), (1, 2), (2, 3), (3, 4),
+                        (0, 5), (5, 6), (6, 4),
+                        (0, 7), (7, 4),
+                        (5, 8),
+                        (9, 6),
+                        (0, 10), (10, 11), (11, 4),
+                    ],
+                );
+
+                assert_eq!(Some(vec!(0, 7, 4)), graph.bfs(0, 4));
+                assert_eq!(Some(vec!(0, 1, 2, 3)), graph.bfs(0, 3));
+                assert_eq!(None, graph.bfs(1, 0));
+            }
+
+            #[test]
+            fn test_dfs() {
+                let graph = Graph::new_unweighted(
+                    vec![0; 12],
+                    vec![
+                        (0, 1), (1, 2), (1, 2), (2, 3), (3, 4),
+                        (0, 5), (5, 6), (6, 4),
+                        (0, 7), (7, 4),
+                        (5, 8),
+                        (9, 6),
+                        (0, 10), (10, 11), (11, 4),
+                    ],
+                );
+
+                assert_eq!(Some(vec!(0, 1, 2, 3, 4)), graph.dfs(0, 4));
+                assert_eq!(Some(vec!(0, 1, 2, 3)), graph.dfs(0, 3));
+                assert_eq!(None, graph.dfs(1, 0));
             }
         }
     }
