@@ -492,7 +492,7 @@ pub mod data {
 
     // Graph!
     pub mod graph {
-        use std::collections::{HashMap, HashSet, VecDeque, BTreeMap};
+        use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
         type NodeLabel = usize;
         type EdgeWeight = i32;
@@ -503,7 +503,10 @@ pub mod data {
         }
 
         impl<T> Graph<T> {
-            pub fn new(nodes: Vec<T>, edge_list: Vec<(NodeLabel, NodeLabel, EdgeWeight)>) -> Graph<T> {
+            pub fn new(
+                nodes: Vec<T>,
+                edge_list: Vec<(NodeLabel, NodeLabel, EdgeWeight)>,
+            ) -> Graph<T> {
                 let mut edges = vec![BTreeMap::new(); nodes.len()];
                 for (head_id, tail_id, edge_weight) in edge_list.iter() {
                     edges[*head_id].insert(*tail_id, *edge_weight);
@@ -512,20 +515,27 @@ pub mod data {
                 Graph { nodes, edges }
             }
 
-            pub fn new_unweighted(nodes: Vec<T>, edge_list: Vec<(NodeLabel, NodeLabel)>) -> Graph<T> {
+            pub fn new_unweighted(
+                nodes: Vec<T>,
+                edge_list: Vec<(NodeLabel, NodeLabel)>,
+            ) -> Graph<T> {
                 let edge_list = edge_list
                     .into_iter()
                     .map(|(source, destination)| (source, destination, 0))
                     .collect();
 
                 Graph::new(nodes, edge_list)
-            }            
+            }
 
-            pub fn dfs(&self, source_id: NodeLabel, destination_id: NodeLabel) -> Option<Vec<NodeLabel>> {
+            pub fn dfs(
+                &self,
+                source_id: NodeLabel,
+                destination_id: NodeLabel,
+            ) -> Option<Vec<NodeLabel>> {
                 let mut parents = HashMap::new();
                 let mut expanded = HashSet::new();
 
-                let mut stack = vec!(source_id);
+                let mut stack = vec![source_id];
 
                 while let Some(node) = stack.pop() {
                     expanded.insert(node);
@@ -545,14 +555,18 @@ pub mod data {
                 None
             }
 
-            pub fn bfs(&self, source_id: NodeLabel, destination_id: NodeLabel) -> Option<Vec<NodeLabel>> {
+            pub fn bfs(
+                &self,
+                source_id: NodeLabel,
+                destination_id: NodeLabel,
+            ) -> Option<Vec<NodeLabel>> {
                 let mut queue = VecDeque::new();
                 let mut parents = HashMap::new();
                 let mut expanded = HashSet::new();
 
                 expanded.insert(source_id);
                 queue.push_back(source_id);
-                
+
                 while let Some(node) = queue.pop_front() {
                     if node == destination_id {
                         return Some(self.backtrace(node, &parents));
@@ -591,19 +605,29 @@ pub mod data {
                 assert_eq!(Some(vec!(0, 1, 2, 4)), graph.bfs(0, 4));
                 assert_eq!(None, graph.bfs(4, 0));
 
-                let graph = Graph::new_unweighted(vec![0; 5], vec![(0, 1), (1, 2), (2, 3), (3, 4), (2, 4)]);
+                let graph =
+                    Graph::new_unweighted(vec![0; 5], vec![(0, 1), (1, 2), (2, 3), (3, 4), (2, 4)]);
 
                 assert_eq!(Some(vec!(0, 1, 2, 4)), graph.bfs(0, 4));
 
                 let graph = Graph::new_unweighted(
                     vec![0; 12],
                     vec![
-                        (0, 1), (1, 2), (1, 2), (2, 3), (3, 4),
-                        (0, 5), (5, 6), (6, 4),
-                        (0, 7), (7, 4),
+                        (0, 1),
+                        (1, 2),
+                        (1, 2),
+                        (2, 3),
+                        (3, 4),
+                        (0, 5),
+                        (5, 6),
+                        (6, 4),
+                        (0, 7),
+                        (7, 4),
                         (5, 8),
                         (9, 6),
-                        (0, 10), (10, 11), (11, 4),
+                        (0, 10),
+                        (10, 11),
+                        (11, 4),
                     ],
                 );
 
@@ -617,18 +641,129 @@ pub mod data {
                 let graph = Graph::new_unweighted(
                     vec![0; 12],
                     vec![
-                        (0, 1), (1, 2), (1, 2), (2, 3), (3, 4),
-                        (0, 5), (5, 6), (6, 4),
-                        (0, 7), (7, 4),
+                        (0, 1),
+                        (1, 2),
+                        (1, 2),
+                        (2, 3),
+                        (3, 4),
+                        (0, 5),
+                        (5, 6),
+                        (6, 4),
+                        (0, 7),
+                        (7, 4),
                         (5, 8),
                         (9, 6),
-                        (0, 10), (10, 11), (11, 4),
+                        (0, 10),
+                        (10, 11),
+                        (11, 4),
                     ],
                 );
 
                 assert_eq!(Some(vec!(0, 1, 2, 3, 4)), graph.dfs(0, 4));
                 assert_eq!(Some(vec!(0, 1, 2, 3)), graph.dfs(0, 3));
                 assert_eq!(None, graph.dfs(1, 0));
+            }
+        }
+    }
+
+    // Trie!
+    pub mod trie {
+
+        use std::str::Chars;
+
+        #[derive(Debug)]
+        struct Trie {
+            value: Option<char>,
+            children: Vec<Trie>,
+        }
+
+        impl Trie {
+            pub fn new(t: &str) -> Trie {
+                Trie {
+                    value: None,
+                    children: Vec::new(),
+                }
+            }
+
+            pub fn contains(&self, t: &str) -> bool {
+                let mut indirect = self;
+                for c in t.chars() {
+                    let position = indirect
+                        .children
+                        .iter()
+                        .position(|child| child.value == Some(c));
+                    if let Some(index) = position {
+                        indirect = &indirect.children[index];
+                    } else {
+                        return false;
+                    }
+                }
+                indirect.children.iter().any(|child| child.value == None)
+            }
+
+            fn contains_char(&self, c: char) -> bool {
+                self.children.iter().any(|child| child.value == Some(c))
+            }
+
+            pub fn add(&mut self, values: &str) {
+                let mut chars = values.chars();
+                self.add_chars(&mut chars);
+            }
+
+            fn add_chars(&mut self, values: &mut Chars) {
+                let mut indirect = self;
+                for c in values {
+                    let child_index = indirect.add_char(c);
+                    indirect = &mut indirect.children[child_index];
+                }
+
+                indirect.set_complete();
+            }
+
+            fn add_char(&mut self, value: char) -> usize {
+                let position = self
+                    .children
+                    .iter()
+                    .position(|child| child.value == Some(value));
+
+                if let Some(index) = position {
+                    return index;
+                }
+                self.children.push(Trie {
+                    value: Some(value),
+                    children: Vec::new(),
+                });
+                self.children.len() - 1
+            }
+
+            fn set_complete(&mut self) {
+                for child in self.children.iter() {
+                    if child.value == None {
+                        return;
+                    }
+                }
+
+                self.children.push(Trie {
+                    value: None,
+                    children: Vec::new(),
+                });
+            }
+        }
+
+        #[cfg(test)]
+        mod tests {
+            use super::*;
+
+            #[test]
+            fn test_contains_empty() {
+                let mut trie = Trie::new("");
+
+                assert!(!trie.contains("a"));
+
+                trie.add("abc");
+                assert!(trie.contains("abc"));
+
+                assert!(!trie.contains("ab"));
             }
         }
     }
