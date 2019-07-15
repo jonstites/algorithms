@@ -1,6 +1,5 @@
 pub mod data;
 
-
 pub mod linked_list {
 
     #[derive(Debug, PartialEq)]
