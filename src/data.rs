@@ -678,7 +678,7 @@ pub mod data {
         }
 
         impl Trie {
-            pub fn new(t: &str) -> Trie {
+            pub fn new() -> Trie {
                 Trie {
                     value: None,
                     children: Vec::new(),
@@ -686,23 +686,31 @@ pub mod data {
             }
 
             pub fn contains(&self, t: &str) -> bool {
-                let mut indirect = self;
+                if let Some(current) = self.child_matches(t) {
+                    current.children.iter().any(|child| child.value == None)
+                } else {
+                    false
+                }
+            }
+
+            pub fn contains_prefix(&self, t: &str) -> bool {
+                self.child_matches(t).is_some()
+            }
+
+            fn child_matches(&self, t: &str) -> Option<&Trie> {
+                let mut current = self;
                 for c in t.chars() {
-                    let position = indirect
+                    let position = current
                         .children
                         .iter()
                         .position(|child| child.value == Some(c));
                     if let Some(index) = position {
-                        indirect = &indirect.children[index];
+                        current = &current.children[index];
                     } else {
-                        return false;
+                        return None;
                     }
                 }
-                indirect.children.iter().any(|child| child.value == None)
-            }
-
-            fn contains_char(&self, c: char) -> bool {
-                self.children.iter().any(|child| child.value == Some(c))
+                Some(current)
             }
 
             pub fn add(&mut self, values: &str) {
@@ -711,13 +719,13 @@ pub mod data {
             }
 
             fn add_chars(&mut self, values: &mut Chars) {
-                let mut indirect = self;
+                let mut current = self;
                 for c in values {
-                    let child_index = indirect.add_char(c);
-                    indirect = &mut indirect.children[child_index];
+                    let child_index = current.add_char(c);
+                    current = &mut current.children[child_index];
                 }
 
-                indirect.set_complete();
+                current.set_complete();
             }
 
             fn add_char(&mut self, value: char) -> usize {
@@ -755,8 +763,8 @@ pub mod data {
             use super::*;
 
             #[test]
-            fn test_contains_empty() {
-                let mut trie = Trie::new("");
+            fn test_contains() {
+                let mut trie = Trie::new();
 
                 assert!(!trie.contains("a"));
 
@@ -764,6 +772,14 @@ pub mod data {
                 assert!(trie.contains("abc"));
 
                 assert!(!trie.contains("ab"));
+                assert!(!trie.contains("bca"));
+                assert!(!trie.contains("abcd"));
+
+                assert!(trie.contains_prefix("ab"));
+                assert!(!trie.contains_prefix("bca"));
+
+                trie.add("abcde");
+                assert!(trie.contains("abcde"));            
             }
         }
     }
